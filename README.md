@@ -1,6 +1,6 @@
-# Eva Voice Assistant on Raspberry Pi
+# Iva(Interactive Voice Assistant) Voice Assistant on Raspberry Pi
 
-Eva is a Python-based voice assistant that you can deploy not only on typical desktops but also on a **Raspberry Pi**, turning it into a free, fully functional AI device. It can handle tasks like:
+Eva is a Python-based voice assistant that you can deploy on typical desktops and on a **Raspberry Pi**, turning it into a free, fully functional AI device. It can handle tasks like:
 
 - Searching the web on Wikipedia, YouTube, Google, and Stack Overflow  
 - Playing music via the Deezer RapidAPI  
@@ -9,7 +9,7 @@ Eva is a Python-based voice assistant that you can deploy not only on typical de
 - Fetching news headlines using the News API  
 - Computing with WolframAlpha  
 - Chatting via OpenAI’s GPT API  
-- Telling jokes, locking/shutting down (on desktop), creating notes, etc.
+- Tell jokes, lock/shut down (on desktop), create notes, etc.
 
 ## Table of Contents
 1. [Features](#features)  
@@ -36,7 +36,7 @@ Eva is a Python-based voice assistant that you can deploy not only on typical de
 - **News Headlines**: Retrieves top headlines from NewsAPI.  
 - **Mathematical/Knowledge Queries**: Interfaces with WolframAlpha.  
 - **ChatGPT Support**: Asks OpenAI’s API for extended chat or Q&A.  
-- **System Commands**: Lock, shutdown, or empty recycle bin (Windows-only).  
+- **System Commands**: Lock, shut down, or empty recycle bin (Windows-only).  
 - **Cross-Platform**: Runs on Windows, Linux, macOS, **and** Raspberry Pi.
 
 ---
@@ -100,7 +100,7 @@ On a Raspberry Pi, you may need to install `libportaudio2` or other dependencies
    - If you’re using a USB mic/speaker, ensure they’re correctly recognized in `raspi-config` or by `arecord -l` and `aplay -l`.
 
 4. **Python Environment**  
-   - It’s recommended to create a virtual environment. For instance:
+   - It’s recommended that a virtual environment be created. For instance:
      ```bash
      sudo apt-get install python3-venv
      python3 -m venv venv
@@ -210,7 +210,7 @@ To keep your secrets private (like API keys and email credentials), this project
      - “Exit.”
 
 3. **Automate Startup** (Raspberry Pi)  
-   - If you want Eva to run automatically on boot, consider adding a cron job (`crontab -e`) or a systemd service that launches `main.py` on startup.
+   - If you want Eva to run automatically on boot, consider adding a cron job (`crontab -e`) or a system service that launches `main.py` on startup.
 
 ---
 
