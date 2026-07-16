@@ -1,256 +1,160 @@
-# Iva(Interactive Voice Assistant) Voice Assistant on Raspberry Pi
+# Ask Your Data — a natural-language layer over my analytics projects
 
-Eva is a Python-based voice assistant that you can deploy on typical desktops and on a **Raspberry Pi**, turning it into a free, fully functional AI device. It can handle tasks like:
+![Python](https://img.shields.io/badge/Python-DuckDB%20%2B%20Claude-3776AB?logo=python&logoColor=white)
+![LLM](https://img.shields.io/badge/LLM-text--to--SQL-8A2BE2)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
-- Searching the web on Wikipedia, YouTube, Google, and Stack Overflow  
-- Playing music via the Deezer RapidAPI  
-- Sending emails with `yagmail`  
-- Getting real-time weather details using the Weather API  
-- Fetching news headlines using the News API  
-- Computing with WolframAlpha  
-- Chatting via OpenAI’s GPT API  
-- Tell jokes, lock/shut down (on desktop), create notes, etc.
+Ask a plain-English question about any of my portfolio datasets and get a real
+answer — with the SQL that produced it shown right next to the number. A
+non-technical manager can type *"which payer type collects the least of what it
+bills?"* and get *"Self-Pay, at about 21% of the allowed amount"*, plus the exact
+query that computed it.
 
-## Table of Contents
-1. [Features](#features)  
-2. [Requirements](#requirements)  
-3. [Raspberry Pi Setup](#raspberry-pi-setup)  
-4. [Installation](#installation)  
-5. [Environment Variables](#environment-variables)  
-6. [Usage](#usage)  
-7. [Customization](#customization)  
-8. [Troubleshooting](#troubleshooting)  
-9. [License](#license)
+It reads from **36 tables across 6 business domains**, vendored from my seven
+analytics repos (hospital revenue cycle, workforce/attrition, GL reconciliation,
+cold-chain supply chain, wholesale retail, and a legacy→Fabric migration).
 
----
+## The one design decision that matters
 
-## Features
+This is **not** a chatbot that answers from memory. It's a **grounded
+text-to-SQL agent**, and that distinction is the whole point:
 
-- **Voice Activation**: Uses [Picovoice Porcupine](https://github.com/Picovoice/porcupine) for wake-word detection (“Hello Eva”).  
-- **Speech Recognition**: Leverages [SpeechRecognition](https://pypi.org/project/SpeechRecognition/) with Google’s speech recognition API.  
-- **Speech Synthesis**: Converts text to speech using [pyttsx3](https://pypi.org/project/pyttsx3/).  
-- **Web Search**: Automatically opens results on Google, YouTube, Wikipedia, and Stack Overflow.  
-- **Music Playback**: Fetches songs from Deezer (via RapidAPI) and plays previews using VLC.  
-- **Email Sending**: Integrates with `yagmail` for Gmail-based sending.  
-- **Weather Information**: Fetches current weather from WeatherAPI.  
-- **News Headlines**: Retrieves top headlines from NewsAPI.  
-- **Mathematical/Knowledge Queries**: Interfaces with WolframAlpha.  
-- **ChatGPT Support**: Asks OpenAI’s API for extended chat or Q&A.  
-- **System Commands**: Lock, shut down, or empty recycle bin (Windows-only).  
-- **Cross-Platform**: Runs on Windows, Linux, macOS, **and** Raspberry Pi.
+- The language model's only job is to **write SQL**. It never states a figure
+  from its own head — every number in the answer comes from a query that
+  **actually ran** against the data.
+- Every answer **shows its SQL**. You can read exactly how the number was
+  computed and check it yourself.
+- If a question **can't** be answered from the loaded tables, it **says so**
+  instead of inventing an answer.
+- The generated SQL passes a **read-only guard** before it runs — SELECT only,
+  single statement, no data or schema changes — so a bad or adversarial query
+  can't modify anything.
 
----
+That's what makes it a BI engineer's tool rather than a demo: it's auditable,
+it's constrained, and — see below — it's **tested**.
 
-## Requirements
+## From voice assistant to BI assistant (this repo's history)
 
-- **Python 3.7 or later**  
-- A functioning microphone and speaker (USB mic, USB speaker, or a 3.5 mm jack on Raspberry Pi).  
-- **pyaudio** sometimes requires additional system dependencies. (On Raspberry Pi, see below.)
+This repository started life as *IVA*, a hobby Raspberry-Pi voice assistant I
+built years ago. I rebuilt it into what my portfolio actually needed: a
+natural-language interface to the analytics work in my other repos. The old
+voice-assistant code is gone; the git history is kept so the pivot is honest and
+visible.
 
-### Python Libraries
+## How it works
 
-A typical `requirements.txt` might include:
-
-```txt
-pyaudio
-pvporcupine
-speechrecognition
-pyttsx3
-wolframalpha
-requests
-pyjokes
-winshell
-wikipedia
-twilio
-yagmail
-newsapi-python
-ytmusicapi
-python-dotenv
-pyvlc
-ecapture
+```mermaid
+flowchart LR
+    Q["Question in<br/>plain English"] --> A[Claude]
+    C[("Schema catalog<br/>36 tables + descriptions")] --> A
+    A -->|writes SQL| G{"Read-only<br/>SQL guard"}
+    A -->|out of scope| R["Refuses honestly"]
+    G -->|SELECT only| DB[("DuckDB warehouse<br/>vendored synthetic data")]
+    G -->|blocked| X["Rejected"]
+    DB --> S["Answer in plain English<br/>+ the SQL + the rows"]
 ```
 
-On a Raspberry Pi, you may need to install `libportaudio2` or other dependencies before installing PyAudio.
+1. **Warehouse** — every vendored CSV is loaded into an in-memory DuckDB, one
+   table per file, named `<domain>_<table>` so the several `dim_customer` /
+   `fact_orders` tables from different domains never collide.
+2. **Schema catalog** — the tables, their business descriptions, and their real
+   column types are rendered into the prompt. Good text-to-SQL lives or dies on
+   this catalog, so it's generated from the actual loaded schema, not hand-typed.
+3. **Model → SQL** — Claude returns a single SELECT (or a refusal) as a
+   structured tool call.
+4. **Guard → execute** — the SQL is validated read-only, run against DuckDB, and
+   capped at a sane row count.
+5. **Answer** — the result table is summarized into one or two sentences,
+   grounded strictly in the rows returned.
 
----
+## What it's tested against (no API key needed)
 
-## Raspberry Pi Setup
+The trustworthy claims above are enforced in CI, which runs **without a model**:
 
-1. **Update Your Pi**  
-   ```bash
-   sudo apt-get update
-   sudo apt-get upgrade
-   ```
+- **SQL guard** — an exhaustive suite proves every mutation verb (INSERT, DELETE,
+  DROP, ATTACH, COPY, PRAGMA, …) is rejected and that legitimate analytical SQL
+  (CTEs, aggregates, a keyword inside a string literal) is allowed.
+- **Warehouse & catalog** — every manifest table loads with rows, the catalog
+  describes each one, and known control totals hold (e.g. 12,000 claims).
+- **Golden questions** — a set of natural-language questions, each with the
+  reference SQL that answers it and the expected answer. CI runs every reference
+  query and checks the result, locking the data and the reference SQL against
+  silent drift. This is the accuracy contract.
 
-2. **Install Dependencies**  
-   - **PyAudio**:  
-     ```bash
-     sudo apt-get install portaudio19-dev python3-pyaudio
-     ```
-   - **VLC**:  
-     ```bash
-     sudo apt-get install vlc
-     ```
-   - (Optional) Some libraries might need `libatlas-base-dev` or other system packages.  
-     ```bash
-     sudo apt-get install libatlas-base-dev
-     ```
-   
-3. **Enable Audio Inputs and Outputs**  
-   - If you’re using a USB mic/speaker, ensure they’re correctly recognized in `raspi-config` or by `arecord -l` and `aplay -l`.
+The **live** layer — does the *model* write SQL that produces the right answer? —
+is a separate evaluation (`scripts/run_live_eval.py`) that asks the assistant
+each golden question, runs the SQL it writes, and checks the answer. It needs an
+API key, so it runs on demand rather than in CI.
 
-4. **Python Environment**  
-   - It’s recommended that a virtual environment be created. For instance:
-     ```bash
-     sudo apt-get install python3-venv
-     python3 -m venv venv
-     source venv/bin/activate
-     ```
+```
+51 tests — the 50 that don't need a model run in CI; 1 live model test skips without a key.
+```
 
-5. **Clone This Repository & Install Requirements**  
-   ```bash
-   git clone https://github.com/yourusername/yourproject.git
-   cd yourproject
-   pip install -r requirements.txt
-   ```
+## Run it
 
-6. **Set Up Environment Variables** (see [Environment Variables](#environment-variables)).
+```bash
+pip install -r requirements.txt
 
----
+# 1. Prove the plumbing (no API key needed)
+pytest tests/ -v
 
-## Installation
+# 2. Ask questions (needs ANTHROPIC_API_KEY)
+export ANTHROPIC_API_KEY=sk-ant-...
+python -m app.cli "which department has the most flight-risk employees?"
 
-> **Note**: The installation steps below are for general usage on any system. For Raspberry Pi–specific notes, see [Raspberry Pi Setup](#raspberry-pi-setup).
+# 3. Chat UI
+streamlit run app/streamlit_app.py
 
-1. **Clone or download this repository**  
-   ```bash
-   git clone https://github.com/yourusername/yourproject.git
-   cd yourproject
-   ```
+# 4. Grade the natural-language layer end-to-end
+python scripts/run_live_eval.py
+```
 
-2. **Create a virtual environment** (optional but recommended)  
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
+By default it uses `claude-opus-4-8`; set `ASK_YOUR_DATA_MODEL` to use another.
 
-3. **Install dependencies**  
-   ```bash
-   pip install -r requirements.txt
-   ```
+## The data (all synthetic — no PHI, no real customers)
 
-4. **Set up environment variables** (see [Environment Variables](#environment-variables)).
+Every table is generated with fixed seeds in the source repos (Faker etc.), so
+nothing here is real patient, employee, or customer data. `scripts/vendor_data.py`
+copies the curated set out of the sibling repos into `data/`; `data_manifest.py`
+is the single source of truth for what's loaded and how each table is described.
 
-5. **Run the script**  
-   ```bash
-   python main.py
-   ```
-   *Replace `main.py` with your actual entry point if it differs.*
+| Domain | What's in it |
+|---|---|
+| `healthcare` | Hospital revenue cycle — claims, payers, providers, the NRV worklist |
+| `hr` | Workforce — employees, attrition, hiring funnel, flight-risk scores |
+| `finance` | GL reconciliation — ERP vs. subledger and the exceptions between them |
+| `supplychain` | Cold-chain distribution — orders, inventory lots, demand forecast |
+| `retail` | Specialty-meats wholesale — customers, sales, RFM analytics, cross-sell |
+| `migration` | A legacy→Fabric migration program and its parallel-run validation |
 
----
+## Repo layout
 
-## Environment Variables
+```
+data_manifest.py    the catalog of tables: domain, source, description
+data/               vendored synthetic CSVs, by domain
+engine/
+  warehouse.py      builds the in-memory DuckDB + the schema catalog
+  sql_guard.py      read-only validation (the safety boundary)
+  query.py          execute a validated query, cap rows, surface errors
+  assistant.py      NL -> SQL via Claude, grounded answer synthesis
+app/
+  cli.py            terminal Q&A
+  streamlit_app.py  chat UI that shows the answer, the SQL, and the rows
+evals/
+  golden_questions.yaml   question -> reference SQL -> expected answer
+tests/              SQL guard, warehouse, golden SQL, assistant contract
+scripts/            vendor_data.py, run_live_eval.py
+.github/workflows/  CI — builds the warehouse and runs the offline suite
+```
 
-To keep your secrets private (like API keys and email credentials), this project uses environment variables.  
+## Deliberate choices
 
-1. **Create a `.env` file** in the project root (same location as `main.py` or `requirements.txt`).  
-2. **Add the following content** (replace with actual values):
-
-   ```bash
-   # RapidAPI credentials
-   RAPIDAPI_KEY=your_rapidapi_key
-   RAPIDAPI_HOST=deezerdevs-deezer.p.rapidapi.com
-
-   # Email credentials
-   EMAIL_ADDRESS=your_email@gmail.com
-   EMAIL_PASSWORD=your_email_password
-
-   # WolframAlpha
-   WOLFRAMALPHA_API_KEY=your_wolframalpha_api_key
-
-   # Weather API
-   WEATHERAPI_KEY=your_weatherapi_key
-
-   # News API
-   NEWSAPI_KEY=your_newsapi_key
-
-   # OpenAI
-   OPENAI_API_KEY=your_openai_api_key
-
-   # Picovoice Porcupine Access Key & Keyword Path
-   PICOVOICE_ACCESS_KEY=your_picovoice_access_key
-   PORCUPINE_KEYWORD_PATH=/path/to/Hello-Eva_en_windows_v3_0_0.ppn
-   ```
-
-3. **Ignore `.env`**  
-   Make sure your `.gitignore` includes `.env` so it isn’t committed.
-
----
-
-## Usage
-
-1. **Start the assistant**:  
-   ```bash
-   python main.py
-   ```
-   - The assistant will listen for the wake word **“Hello Eva”**.  
-
-2. **Interact via voice**:  
-   - When you see “Wake word detected!” or hear “Hello,” you can speak your commands.  
-   - Example phrases:
-     - “Open Wikipedia”  
-     - “Open YouTube”  
-     - “Play music”  
-     - “What is the weather in London?”  
-     - “Tell me a joke.”  
-     - “Ask GPT how to make pancakes.”  
-     - “Lock window” (Windows only)  
-     - “Shut down system” (Windows only)  
-     - “Show note” or “Write a note”  
-     - “Exit.”
-
-3. **Automate Startup** (Raspberry Pi)  
-   - If you want Eva to run automatically on boot, consider adding a cron job (`crontab -e`) or a system service that launches `main.py` on startup.
-
----
-
-## Customization
-
-- **Voice Settings**: Modify the rate or volume in the `text_to_speech` function.  
-- **Wake Word**: Adjust Picovoice parameters in `main()` (e.g., sensitivity).  
-- **APIs**: Add or remove functionality in `process_command`.  
-- **Raspberry Pi–Specific Commands**: Some commands (e.g., lock, empty recycle bin) won’t work on Raspberry Pi. You can remove or adapt them.
-
----
-
-## Troubleshooting
-
-1. **Audio Issues on Raspberry Pi**:
-   - Make sure your USB mic and speakers are detected.  
-   - Run `sudo raspi-config` to configure audio input/output.  
-   - Use `arecord` / `aplay` tests to verify the mic and speaker.
-
-2. **PyAudio Install Errors**:
-   - Install system dependencies: `sudo apt-get install portaudio19-dev python3-pyaudio`.
-
-3. **Porcupine Access Key**:
-   - Check your `.env` for `PICOVOICE_ACCESS_KEY`.  
-   - Ensure the correct `.ppn` file path for `PORCUPINE_KEYWORD_PATH`.
-
-4. **Speech Recognition Issues**:
-   - Google’s recognition sometimes struggles with poor audio.  
-   - Ensure a stable internet connection.
-
-5. **API Rate Limits**:
-   - Make sure your accounts (OpenAI, RapidAPI, etc.) have sufficient usage quota.
-
----
-
-## License
-
-This project is licensed under the [MIT License](LICENSE.md).  
-Feel free to modify and distribute as needed, but remember to follow the terms of use for any third-party services (OpenAI, WolframAlpha, WeatherAPI, etc.).
-
----
-
-**Congratulations!** You now have a working AI device on your Raspberry Pi without any recurring fees beyond your hardware and optional subscriptions for premium API usage. Enjoy your own personal, free-to-run AI Assistant!  
+- **Text-to-SQL, not a fine-tuned model or a vector database.** The datasets are
+  a few MB of clean relational tables. SQL over DuckDB is the correct,
+  inspectable tool; embeddings would add opacity and buy nothing here.
+- **Read-only by construction.** The guard blocks everything but SELECT, so the
+  assistant can't change data even if the model tried.
+- **The answer is only as good as the SQL, and the SQL is always visible.** No
+  hidden reasoning stands between the question and the number.
+- **Synthetic data only.** The point is to demonstrate the interface over
+  realistic analytics, not to expose anyone's real records.

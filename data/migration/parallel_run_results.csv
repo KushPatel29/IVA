@@ -1,0 +1,192 @@
+run_id,artifact_id,run_date,attempt,row_count_match,control_totals_match,checksum_match,verdict,mismatch_reason
+1,2,2025-10-06,1,True,True,False,NO-GO,Checksum mismatch
+2,2,2025-11-16,2,True,True,True,GO,
+3,3,2025-09-25,1,True,True,False,NO-GO,Late-arriving data window
+4,3,2025-11-11,2,True,True,True,GO,
+5,4,2026-01-30,1,True,True,True,GO,
+6,6,2026-01-31,1,True,True,True,GO,
+7,7,2025-11-02,1,True,True,False,NO-GO,Schema drift
+8,7,2025-10-17,2,True,True,True,GO,
+9,8,2025-12-31,1,True,True,True,GO,
+10,9,2025-12-15,1,True,True,False,NO-GO,Checksum mismatch
+11,9,2026-01-09,2,False,True,True,NO-GO,Row count drift
+12,9,2026-02-23,3,True,True,True,GO,
+13,10,2025-12-31,1,True,False,True,NO-GO,Control total variance
+14,10,2026-01-13,2,True,True,True,GO,
+15,12,2026-01-15,1,True,True,False,NO-GO,Schema drift
+16,12,2026-02-21,2,True,True,True,GO,
+17,13,2025-07-10,1,True,True,True,GO,
+18,15,2025-11-13,1,True,True,False,NO-GO,Late-arriving data window
+19,15,2026-01-15,2,True,False,True,NO-GO,Control total variance
+20,15,2026-01-27,3,True,True,True,GO,
+21,16,2026-02-10,1,True,True,True,GO,
+22,17,2026-01-06,1,True,False,True,NO-GO,Control total variance
+23,17,2026-01-14,2,True,True,True,GO,
+24,18,2025-10-22,1,True,True,True,GO,
+25,19,2026-02-16,1,True,True,True,GO,
+26,20,2026-05-25,1,False,True,True,NO-GO,Row count drift
+27,21,2026-04-12,1,True,True,False,NO-GO,Late-arriving data window
+28,21,2026-03-02,2,True,True,False,NO-GO,Checksum mismatch
+29,21,2026-05-18,3,True,True,True,GO,
+30,22,2025-06-28,1,True,True,False,NO-GO,Schema drift
+31,22,2025-07-22,2,True,False,True,NO-GO,Control total variance
+32,22,2025-08-14,3,True,True,True,GO,
+33,23,2026-03-28,1,True,True,False,NO-GO,Schema drift
+34,23,2026-04-27,2,True,True,True,GO,
+35,25,2025-12-29,1,True,True,True,GO,
+36,26,2025-12-19,1,True,True,False,NO-GO,Checksum mismatch
+37,26,2026-01-27,2,True,True,True,GO,
+38,27,2025-09-12,1,True,True,False,NO-GO,Checksum mismatch
+39,27,2025-10-10,2,True,True,True,GO,
+40,28,2025-12-31,1,True,False,True,NO-GO,Control total variance
+41,28,2026-02-05,2,True,True,True,GO,
+42,30,2025-10-01,1,True,True,False,NO-GO,Late-arriving data window
+43,30,2025-10-10,2,True,True,True,GO,
+44,31,2025-11-26,1,True,True,True,GO,
+45,32,2025-10-07,1,True,True,True,GO,
+46,34,2025-10-20,1,True,True,False,NO-GO,Schema drift
+47,34,2025-10-07,2,True,True,True,GO,
+48,35,2026-01-16,1,True,True,True,GO,
+49,36,2026-01-12,1,True,False,True,NO-GO,Control total variance
+50,36,2026-01-20,2,True,True,False,NO-GO,Late-arriving data window
+51,36,2026-02-03,3,True,True,True,GO,
+52,38,2025-10-26,1,True,True,False,NO-GO,Checksum mismatch
+53,38,2025-11-30,2,True,True,True,GO,
+54,39,2026-02-11,1,True,True,True,GO,
+55,41,2026-01-13,1,True,True,False,NO-GO,Checksum mismatch
+56,41,2026-01-15,2,True,True,False,NO-GO,Late-arriving data window
+57,41,2026-02-23,3,True,True,True,GO,
+58,42,2026-01-17,1,True,True,True,GO,
+59,43,2025-09-22,1,True,False,True,NO-GO,Control total variance
+60,43,2025-09-10,2,True,False,True,NO-GO,Control total variance
+61,43,2025-10-31,3,True,True,True,GO,
+62,44,2026-03-10,1,True,False,True,NO-GO,Control total variance
+63,44,2026-05-23,2,True,True,True,GO,
+64,45,2025-10-28,1,True,True,True,GO,
+65,46,2026-05-24,1,False,True,True,NO-GO,Row count drift
+66,47,2026-03-18,1,False,True,True,NO-GO,Row count drift
+67,47,2026-04-16,2,True,True,False,NO-GO,Checksum mismatch
+68,47,2026-04-12,3,True,True,True,GO,
+69,48,2025-10-07,1,True,True,True,GO,
+70,49,2026-04-07,1,False,True,True,NO-GO,Row count drift
+71,49,2026-05-31,2,True,True,True,GO,
+72,50,2025-12-28,1,True,False,True,NO-GO,Control total variance
+73,50,2026-01-12,2,True,True,True,GO,
+74,51,2025-11-29,1,True,True,True,GO,
+75,52,2025-12-02,1,True,True,True,GO,
+76,53,2026-04-01,1,True,True,False,NO-GO,Checksum mismatch
+77,54,2025-12-31,1,True,True,True,GO,
+78,55,2025-12-15,1,True,False,True,NO-GO,Control total variance
+79,55,2025-12-21,2,True,True,False,NO-GO,Late-arriving data window
+80,55,2026-02-04,3,True,True,True,GO,
+81,56,2025-11-23,1,True,True,True,GO,
+82,57,2025-08-29,1,True,True,False,NO-GO,Late-arriving data window
+83,57,2025-09-09,2,True,True,False,NO-GO,Checksum mismatch
+84,57,2025-09-27,3,True,True,True,GO,
+85,58,2026-03-27,1,True,True,False,NO-GO,Checksum mismatch
+86,58,2026-04-19,2,True,True,True,GO,
+87,59,2025-11-03,1,True,True,True,GO,
+88,60,2025-12-15,1,False,True,True,NO-GO,Row count drift
+89,60,2025-12-25,2,True,True,False,NO-GO,Schema drift
+90,60,2026-01-27,3,True,True,True,GO,
+91,61,2025-10-09,1,True,True,False,NO-GO,Late-arriving data window
+92,61,2025-11-18,2,True,True,True,GO,
+93,62,2025-08-10,1,True,True,False,NO-GO,Checksum mismatch
+94,62,2025-10-07,2,True,True,False,NO-GO,Late-arriving data window
+95,62,2025-11-14,3,True,True,True,GO,
+96,63,2025-12-27,1,True,True,True,GO,
+97,64,2026-02-05,1,True,True,True,GO,
+98,66,2025-10-31,1,True,True,True,GO,
+99,67,2026-05-09,1,True,True,True,GO,
+100,68,2025-08-18,1,True,True,True,GO,
+101,69,2025-12-10,1,False,True,True,NO-GO,Row count drift
+102,69,2026-01-07,2,True,True,True,GO,
+103,73,2025-10-05,1,False,True,True,NO-GO,Row count drift
+104,73,2025-10-30,2,False,True,True,NO-GO,Row count drift
+105,73,2025-10-11,3,True,True,True,GO,
+106,75,2026-05-08,1,True,True,False,NO-GO,Late-arriving data window
+107,75,2026-05-02,2,True,True,True,GO,
+108,76,2025-05-11,1,False,True,True,NO-GO,Row count drift
+109,76,2025-06-24,2,True,False,True,NO-GO,Control total variance
+110,76,2025-07-14,3,True,True,True,GO,
+111,77,2025-09-15,1,True,True,False,NO-GO,Schema drift
+112,77,2025-10-13,2,True,True,True,GO,
+113,78,2026-06-05,1,False,True,True,NO-GO,Row count drift
+114,80,2025-10-15,1,True,True,True,GO,
+115,81,2025-12-05,1,False,True,True,NO-GO,Row count drift
+116,81,2026-02-19,2,True,True,True,GO,
+117,82,2026-02-24,1,True,True,True,GO,
+118,83,2026-04-10,1,True,True,True,GO,
+119,84,2026-03-23,1,True,True,False,NO-GO,Late-arriving data window
+120,84,2026-04-07,2,True,True,True,GO,
+121,85,2025-11-13,1,True,True,True,GO,
+122,86,2025-12-28,1,False,True,True,NO-GO,Row count drift
+123,86,2026-02-21,2,True,True,True,GO,
+124,87,2026-02-23,1,True,True,True,GO,
+125,91,2026-02-28,1,True,False,True,NO-GO,Control total variance
+126,91,2026-03-16,2,True,True,False,NO-GO,Late-arriving data window
+127,91,2026-04-07,3,True,True,True,GO,
+128,93,2025-11-07,1,True,True,False,NO-GO,Checksum mismatch
+129,93,2025-10-13,2,True,True,True,GO,
+130,94,2025-10-30,1,True,True,True,GO,
+131,95,2026-01-06,1,True,True,True,GO,
+132,97,2026-03-03,1,True,True,True,GO,
+133,98,2026-01-05,1,True,True,True,GO,
+134,99,2026-01-19,1,True,True,True,GO,
+135,100,2025-09-12,1,True,True,False,NO-GO,Late-arriving data window
+136,100,2025-09-17,2,False,True,True,NO-GO,Row count drift
+137,100,2025-11-25,3,True,True,True,GO,
+138,101,2026-04-11,1,True,True,False,NO-GO,Checksum mismatch
+139,102,2026-02-25,1,True,True,True,GO,
+140,103,2026-01-24,1,True,True,False,NO-GO,Late-arriving data window
+141,103,2026-01-31,2,True,True,True,GO,
+142,104,2025-11-24,1,True,True,True,GO,
+143,105,2026-05-19,1,True,True,True,GO,
+144,108,2025-12-29,1,True,True,True,GO,
+145,109,2025-12-27,1,True,True,False,NO-GO,Late-arriving data window
+146,109,2026-02-28,2,True,True,True,GO,
+147,110,2026-01-13,1,True,True,True,GO,
+148,112,2025-09-05,1,True,False,True,NO-GO,Control total variance
+149,112,2025-10-01,2,True,True,False,NO-GO,Late-arriving data window
+150,112,2025-11-11,3,True,True,True,GO,
+151,114,2025-10-26,1,True,True,False,NO-GO,Checksum mismatch
+152,114,2025-11-19,2,True,True,True,GO,
+153,116,2026-03-03,1,True,True,True,GO,
+154,117,2026-01-21,1,True,True,False,NO-GO,Schema drift
+155,117,2026-02-02,2,True,True,True,GO,
+156,118,2025-09-05,1,True,False,True,NO-GO,Control total variance
+157,118,2025-11-09,2,True,True,True,GO,
+158,119,2026-04-28,1,True,True,True,GO,
+159,120,2026-03-28,1,True,True,False,NO-GO,Schema drift
+160,120,2026-04-29,2,True,False,True,NO-GO,Control total variance
+161,121,2025-11-23,1,True,True,True,GO,
+162,122,2025-12-29,1,True,True,False,NO-GO,Checksum mismatch
+163,122,2026-01-28,2,True,True,True,GO,
+164,123,2025-10-29,1,True,True,True,GO,
+165,124,2025-08-22,1,True,True,True,GO,
+166,126,2026-01-30,1,True,True,True,GO,
+167,127,2026-01-02,1,False,True,True,NO-GO,Row count drift
+168,127,2026-01-17,2,True,True,True,GO,
+169,128,2026-05-09,1,True,True,True,GO,
+170,129,2026-05-10,1,True,True,True,GO,
+171,130,2025-10-09,1,True,True,False,NO-GO,Schema drift
+172,130,2025-12-05,2,True,True,True,GO,
+173,131,2025-11-28,1,True,True,False,NO-GO,Schema drift
+174,131,2025-12-13,2,True,True,False,NO-GO,Schema drift
+175,131,2026-01-16,3,True,True,True,GO,
+176,132,2026-01-12,1,False,True,True,NO-GO,Row count drift
+177,132,2025-12-11,2,True,True,False,NO-GO,Checksum mismatch
+178,132,2025-12-26,3,True,True,True,GO,
+179,133,2026-02-25,1,True,True,True,GO,
+180,134,2025-10-29,1,True,True,True,GO,
+181,135,2025-11-21,1,True,False,True,NO-GO,Control total variance
+182,135,2025-12-07,2,True,True,False,NO-GO,Late-arriving data window
+183,135,2026-02-27,3,True,True,True,GO,
+184,136,2025-11-16,1,True,False,True,NO-GO,Control total variance
+185,136,2025-12-18,2,False,True,True,NO-GO,Row count drift
+186,136,2026-01-11,3,True,True,True,GO,
+187,137,2026-05-02,1,False,True,True,NO-GO,Row count drift
+188,137,2026-05-09,2,True,True,True,GO,
+189,138,2025-12-20,1,True,False,True,NO-GO,Control total variance
+190,138,2026-02-03,2,True,True,True,GO,
+191,140,2026-02-08,1,True,True,True,GO,

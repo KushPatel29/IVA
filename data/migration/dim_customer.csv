@@ -1,0 +1,51 @@
+customer_id,customer_name,region
+1,Butler Group,BC Interior
+2,"Campbell, Bridges and Fritz",BC Lower Mainland
+3,Morton-Hunt,Quebec
+4,"Rose, Kramer and Smith",BC Lower Mainland
+5,"Patterson, Thomas and Potter",BC Lower Mainland
+6,Benson Group,BC Lower Mainland
+7,"Townsend, Russell and Ramos",Ontario
+8,Fernandez-Benson,Quebec
+9,"Crane, Richardson and Moore",Alberta
+10,Martinez Inc,BC Interior
+11,Martin-Chandler,Alberta
+12,Washington-Lopez,BC Lower Mainland
+13,Harrison and Sons,Quebec
+14,Deleon and Sons,BC Interior
+15,"Novak, Shannon and Fischer",Alberta
+16,"Zhang, Jones and Castro",BC Lower Mainland
+17,"Wilcox, Harris and Leblanc",Quebec
+18,"Ortiz, Diaz and Hayes",Quebec
+19,Stewart-Washington,Ontario
+20,Johnson-Davis,Quebec
+21,"Baldwin, Haas and Smith",Quebec
+22,Pierce Ltd,BC Lower Mainland
+23,"Walker, Lynch and Hawkins",BC Interior
+24,"Rodriguez, Caldwell and Sims",Alberta
+25,Reed-Harper,Alberta
+26,Sanchez-Jackson,BC Lower Mainland
+27,Waters LLC,Quebec
+28,Vega Ltd,Alberta
+29,"Roach, Mullen and Russell",BC Lower Mainland
+30,Ali PLC,BC Lower Mainland
+31,Ware Group,Alberta
+32,"Bennett, Wright and Walter",Ontario
+33,Hoffman Group,BC Lower Mainland
+34,Schroeder-Webb,BC Lower Mainland
+35,Williams-Scott,Ontario
+36,Johnson-Wright,BC Interior
+37,Jones-Morgan,Quebec
+38,Lucero Ltd,BC Lower Mainland
+39,"Mendoza, King and Haley",Alberta
+40,"Pruitt, Mendoza and Benton",Quebec
+41,Pope-Keith,Alberta
+42,"Mejia, Washington and Orr",Quebec
+43,Parker-Ferguson,BC Interior
+44,Taylor-Le,BC Lower Mainland
+45,Jennings-Finley,BC Lower Mainland
+46,Baker LLC,Ontario
+47,"Wright, Sosa and Fisher",BC Interior
+48,"Sullivan, Benjamin and Whitehead",Ontario
+49,Thomas Group,Quebec
+50,Lopez Ltd,Quebec

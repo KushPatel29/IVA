@@ -1,0 +1,112 @@
+# Golden questions — the assistant's accuracy contract.
+#
+# Each entry pairs a natural-language question with the reference SQL that
+# correctly answers it and the expected answer. Two things use this file:
+#
+#   * CI (tests/test_golden_sql.py) runs every reference query against the
+#     warehouse and asserts it returns the expected answer — no API key needed.
+#     This locks the data + reference SQL against silent drift.
+#   * The live evaluation (scripts/run_live_eval.py, needs an API key) asks the
+#     assistant each question, runs the SQL *it* writes, and checks the answer
+#     matches — proving the natural-language layer, not just the plumbing.
+#
+# `expect` is compared against the first column of the first row.
+
+- id: denial_rate
+  domain: healthcare
+  question: What is the overall claim denial rate?
+  sql: >
+    SELECT ROUND(100.0 * COUNT(*) FILTER (WHERE status = 'Denied')
+      / COUNT(*) FILTER (WHERE status IN ('Paid', 'Denied')), 1)
+    FROM healthcare_fact_claims
+  expect: 8.2
+
+- id: lowest_ncr_payer_type
+  domain: healthcare
+  question: Which payer type has the lowest net collection rate?
+  sql: >
+    SELECT payer_type FROM (
+      SELECT p.payer_type, SUM(paid_amount) / NULLIF(SUM(allowed_amount), 0) AS ncr
+      FROM healthcare_fact_claims c JOIN healthcare_dim_payer p ON c.payer_id = p.payer_id
+      WHERE status = 'Paid' GROUP BY 1 ORDER BY ncr
+    ) LIMIT 1
+  expect: Self-Pay
+
+- id: expected_nrv_total
+  domain: healthcare
+  question: How much of the open AR do we actually expect to collect (total expected NRV)?
+  sql: SELECT ROUND(SUM(expected_nrv)) FROM healthcare_ar_yield_predictions
+  expect: 1661141.0
+
+- id: active_employees
+  domain: hr
+  question: How many active employees are there?
+  sql: SELECT COUNT(*) FROM hr_fact_employees WHERE is_active = 1
+  expect: 1483
+
+- id: voluntary_attrition
+  domain: hr
+  question: How many employees left voluntarily?
+  sql: SELECT COUNT(*) FROM hr_fact_employees WHERE term_type = 'Voluntary'
+  expect: 304
+
+- id: top_highrisk_dept
+  domain: hr
+  question: Which department has the most high-risk employees on the flight-risk list?
+  sql: >
+    SELECT department FROM hr_flight_risk_scores WHERE risk_band = 'High'
+    GROUP BY department ORDER BY COUNT(*) DESC LIMIT 1
+  expect: Data & Analytics
+
+- id: total_exceptions
+  domain: finance
+  question: How many GL reconciliation exceptions are open?
+  sql: SELECT COUNT(*) FROM finance_reconciliation_exceptions
+  expect: 230
+
+- id: top_exception_type
+  domain: finance
+  question: What is the most common reconciliation exception type?
+  sql: >
+    SELECT exception_type FROM finance_reconciliation_exceptions
+    GROUP BY 1 ORDER BY COUNT(*) DESC LIMIT 1
+  expect: Missing in subledger
+
+- id: fill_rate
+  domain: supplychain
+  question: What is the overall order fill rate (shipped vs ordered)?
+  sql: SELECT ROUND(100.0 * SUM(qty_shipped) / SUM(qty_ordered), 1) FROM supplychain_fact_orders
+  expect: 98.8
+
+- id: top_category_revenue
+  domain: supplychain
+  question: Which product category has the highest shipped revenue?
+  sql: >
+    SELECT p.category FROM supplychain_fact_orders o
+    JOIN supplychain_dim_product p ON o.product_id = p.product_id
+    GROUP BY 1 ORDER BY SUM(o.qty_shipped * o.unit_price) DESC LIMIT 1
+  expect: Frozen
+
+- id: top_customer
+  domain: retail
+  question: Who is the top wholesale customer by revenue?
+  sql: SELECT customer_name FROM retail_customer_analytics ORDER BY total_revenue DESC LIMIT 1
+  expect: Canyon Charcuterie 064
+
+- id: high_churn_customers
+  domain: retail
+  question: How many customers are flagged as high churn risk?
+  sql: SELECT COUNT(*) FROM retail_customer_analytics WHERE churn_risk = 'High'
+  expect: 16
+
+- id: go_verdicts
+  domain: migration
+  question: How many migration artifacts passed parallel-run validation with a GO verdict?
+  sql: SELECT COUNT(*) FROM migration_parallel_run_results WHERE verdict = 'GO'
+  expect: 107
+
+- id: total_claims
+  domain: healthcare
+  question: How many claims are in the dataset in total?
+  sql: SELECT COUNT(*) FROM healthcare_fact_claims
+  expect: 12000
