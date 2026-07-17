@@ -23,9 +23,10 @@ HAS_KEY = bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_
 def test_system_prompt_embeds_the_schema(con):
     # a dummy client is never called — we only inspect the built prompt
     assistant = Assistant(con, client=object())
-    assert "healthcare_fact_claims" in assistant.system
-    assert "hr_fact_employees" in assistant.system
-    assert "SELECT statements only" in assistant.system
+    prompt = assistant.system[0]["text"]
+    assert "healthcare_fact_claims" in prompt
+    assert "hr_fact_employees" in prompt
+    assert "SELECT statements only" in prompt
 
 
 def test_tools_are_well_formed():

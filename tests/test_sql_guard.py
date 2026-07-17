@@ -13,6 +13,8 @@ ALLOWED = [
     "SELECT * FROM retail_fact_sales ORDER BY revenue DESC LIMIT 10;",  # trailing ; ok
     "SELECT * FROM t WHERE note = 'please DROP TABLE t'",  # keyword only inside a string
     "SELECT employee_name FROM hr_fact_employees -- drop everything\n WHERE is_active = 1",
+    "SELECT $$DROP TABLE t; DELETE FROM x$$ AS s",       # dollar-quoted string literal
+    "SELECT $tag$INSERT INTO y$tag$ AS s FROM t",         # tagged dollar quote
 ]
 
 BLOCKED = [
@@ -55,3 +57,9 @@ def test_every_forbidden_keyword_is_caught():
 def test_offset_is_not_mistaken_for_set():
     ok, _ = validate_sql("SELECT * FROM t ORDER BY x LIMIT 5 OFFSET 10")
     assert ok, "OFFSET must not trip the SET rule"
+
+
+def test_dollar_quote_cannot_hide_a_second_statement():
+    # the ; sits OUTSIDE the dollar-quoted string — must still be caught
+    ok, _ = validate_sql("SELECT $$harmless$$ AS s; DROP TABLE t")
+    assert not ok, "statement after a dollar-quoted literal slipped through"

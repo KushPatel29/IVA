@@ -23,6 +23,8 @@ def show(result):
         print(f"\n  I can't answer that from the loaded data: {result.reason}\n")
         return
     print(f"\n{result.answer}\n")
+    if result.attempts > 1:
+        print(f"  (self-corrected after {result.attempts} attempts)")
     print("  SQL:")
     for line in result.sql.strip().splitlines():
         print(f"    {line}")
@@ -44,7 +46,8 @@ def main():
     if len(sys.argv) > 1:
         show(assistant.ask(" ".join(sys.argv[1:])))
         return
-    print("Ask your data. Blank line to quit.\n")
+    print("Ask your data. Follow-up questions work. Blank line to quit.\n")
+    history = []
     while True:
         try:
             q = input("> ").strip()
@@ -52,7 +55,10 @@ def main():
             break
         if not q:
             break
-        show(assistant.ask(q))
+        result = assistant.ask(q, history=history)
+        show(result)
+        if result.ok:
+            history.append(result.as_turn())
 
 
 if __name__ == "__main__":

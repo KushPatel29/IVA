@@ -29,6 +29,9 @@ def _strip_literals(sql: str) -> str:
     sees actual SQL syntax, never data values or column names."""
     sql = re.sub(r"/\*.*?\*/", " ", sql, flags=re.S)   # block comments
     sql = re.sub(r"--[^\n]*", " ", sql)                 # line comments
+    # DuckDB dollar-quoted strings ($$...$$ and $tag$...$tag$) — stripped first,
+    # since a keyword or semicolon inside one must not trip the checks below
+    sql = re.sub(r"\$(\w*)\$.*?\$\1\$", " '' ", sql, flags=re.S)
     sql = re.sub(r"'(?:''|[^'])*'", " '' ", sql)         # single-quoted strings
     sql = re.sub(r'"(?:""|[^"])*"', ' "" ', sql)         # quoted identifiers
     return sql

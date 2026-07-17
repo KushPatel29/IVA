@@ -29,6 +29,12 @@ text-to-SQL agent**, and that distinction is the whole point:
 - The generated SQL passes a **read-only guard** before it runs — SELECT only,
   single statement, no data or schema changes — so a bad or adversarial query
   can't modify anything.
+- When a query fails (a mistyped column, a guard block), the real database error
+  is fed back to the model for a **bounded self-correction** — at most two
+  retries, never an unbounded agent loop, and every failed attempt is kept on
+  the result for transparency.
+- It holds a **conversation**: follow-ups like *"and by region?"* carry the
+  earlier turns (question, SQL, answer) as context.
 
 That's what makes it a BI engineer's tool rather than a demo: it's auditable,
 it's constrained, and — see below — it's **tested**.
@@ -61,10 +67,15 @@ flowchart LR
    column types are rendered into the prompt. Good text-to-SQL lives or dies on
    this catalog, so it's generated from the actual loaded schema, not hand-typed.
 3. **Model → SQL** — Claude returns a single SELECT (or a refusal) as a
-   structured tool call.
-4. **Guard → execute** — the SQL is validated read-only, run against DuckDB, and
-   capped at a sane row count.
-5. **Answer** — the result table is summarized into one or two sentences,
+   structured tool call. Prior turns are replayed as context so follow-up
+   questions work, and the schema catalog carries a prompt-cache marker so it's
+   billed at cache-read rates from the second question on.
+4. **Guard → execute** — the SQL is validated read-only (comments, quoted and
+   dollar-quoted literals stripped before keyword scanning), run against DuckDB
+   on an isolated cursor, and capped at a sane row count.
+5. **Self-correct if needed** — a failed query's real error goes back to the
+   model for a corrected attempt, at most twice.
+6. **Answer** — the result table is summarized into one or two sentences,
    grounded strictly in the rows returned.
 
 ## What it's tested against (no API key needed)
@@ -80,14 +91,25 @@ The trustworthy claims above are enforced in CI, which runs **without a model**:
   reference SQL that answers it and the expected answer. CI runs every reference
   query and checks the result, locking the data and the reference SQL against
   silent drift. This is the accuracy contract.
+- **Harness tests** — a scripted fake client stands in for the model, which lets
+  CI prove the control flow no matter what a model returns: the self-correction
+  loop feeds the real error back and succeeds on retry, the retry budget is
+  hard-bounded, a malicious `DROP TABLE` from the "model" is blocked by the
+  guard **without ever executing** (the table's row count is checked before and
+  after), refusals don't trigger retries, history is replayed for follow-ups,
+  and the schema catalog carries its cache marker.
+- **Docker** — CI also builds the image and runs the whole suite inside the
+  container.
 
 The **live** layer — does the *model* write SQL that produces the right answer? —
 is a separate evaluation (`scripts/run_live_eval.py`) that asks the assistant
-each golden question, runs the SQL it writes, and checks the answer. It needs an
-API key, so it runs on demand rather than in CI.
+each golden question, runs the SQL it writes, and checks the answer. It also
+runs an **adversarial section**: questions like *"delete all denied claims"*
+must end in a refusal or read-only SQL. It needs an API key, so it runs on
+demand rather than in CI.
 
 ```
-51 tests — the 50 that don't need a model run in CI; 1 live model test skips without a key.
+62 tests — the 61 that don't need a model run in CI; 1 live model test skips without a key.
 ```
 
 ## Run it
@@ -141,10 +163,13 @@ app/
   cli.py            terminal Q&A
   streamlit_app.py  chat UI that shows the answer, the SQL, and the rows
 evals/
-  golden_questions.yaml   question -> reference SQL -> expected answer
-tests/              SQL guard, warehouse, golden SQL, assistant contract
-scripts/            vendor_data.py, run_live_eval.py
-.github/workflows/  CI — builds the warehouse and runs the offline suite
+  golden_questions.yaml       question -> reference SQL -> expected answer
+  adversarial_questions.yaml  "delete all claims"-style prompts -> must refuse or stay read-only
+tests/              SQL guard, warehouse, golden SQL, assistant contract,
+                    harness suite (fake-client: self-correction, retry budget, safety)
+scripts/            vendor_data.py, run_live_eval.py (accuracy + safety sections)
+Dockerfile          runs the full offline suite in a container (CI builds it)
+.github/workflows/  CI — offline suite + the same suite inside Docker
 ```
 
 ## Deliberate choices
@@ -152,8 +177,15 @@ scripts/            vendor_data.py, run_live_eval.py
 - **Text-to-SQL, not a fine-tuned model or a vector database.** The datasets are
   a few MB of clean relational tables. SQL over DuckDB is the correct,
   inspectable tool; embeddings would add opacity and buy nothing here.
+- **The SDK directly, no agent framework.** The whole loop is ~80 lines you can
+  read: one call to write SQL, one to summarize, a bounded retry. A framework
+  would add layers to audit without adding capability.
+- **Bounded self-correction, not an autonomous agent.** Two retries, then an
+  honest failure. Cost stays predictable and the behavior stays testable — the
+  retry loop is proven in CI with a fake client.
 - **Read-only by construction.** The guard blocks everything but SELECT, so the
-  assistant can't change data even if the model tried.
+  assistant can't change data even if the model tried — the harness suite proves
+  a malicious statement is rejected before execution, not after.
 - **The answer is only as good as the SQL, and the SQL is always visible.** No
   hidden reasoning stands between the question and the number.
 - **Synthetic data only.** The point is to demonstrate the interface over

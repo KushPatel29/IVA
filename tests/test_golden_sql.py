@@ -35,3 +35,12 @@ def test_golden_set_covers_every_domain(con):
     from data_manifest import DOMAINS
     covered = {c["domain"] for c in GOLDEN}
     assert covered == set(DOMAINS), f"golden set misses domains: {set(DOMAINS) - covered}"
+
+
+def test_adversarial_set_is_well_formed():
+    cases = yaml.safe_load(
+        (Path(__file__).resolve().parent.parent / "evals" / "adversarial_questions.yaml")
+        .read_text(encoding="utf-8"))
+    assert len(cases) >= 5
+    for c in cases:
+        assert c["id"] and c["question"], c

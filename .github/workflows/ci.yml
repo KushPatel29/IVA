@@ -19,6 +19,17 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Build the warehouse and run the suite
-        # No API key in CI: the SQL guard, executor, warehouse, and every golden
-        # reference query run offline. The live model test skips automatically.
+        # No API key in CI: the SQL guard, executor, warehouse, harness (fake
+        # client), and every golden reference query run offline. The live model
+        # test skips automatically.
         run: pytest tests/ -v
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image and run the suite inside the container
+        run: |
+          docker build -t ask-your-data .
+          docker run --rm ask-your-data

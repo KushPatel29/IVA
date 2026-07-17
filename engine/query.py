@@ -29,12 +29,18 @@ def run_query(con, sql: str, max_rows: int = MAX_ROWS) -> QueryResult:
     ok, reason = validate_sql(sql)
     if not ok:
         return QueryResult(sql=sql, error=f"blocked by SQL guard: {reason}")
+    # Each query runs on its own cursor (a duplicate connection to the same
+    # in-memory database), so concurrent callers — e.g. two Streamlit sessions
+    # sharing the cached warehouse — never interleave on one connection.
+    cur = con.cursor()
     try:
-        cur = con.execute(sql)
+        cur.execute(sql)
         columns = [d[0] for d in cur.description]
         rows = cur.fetchmany(max_rows + 1)
     except Exception as e:  # surface DuckDB errors (bad column, etc.) to the caller
         return QueryResult(sql=sql, error=str(e).strip().splitlines()[0])
+    finally:
+        cur.close()
     truncated = len(rows) > max_rows
     rows = rows[:max_rows]
     return QueryResult(sql=sql, columns=columns, rows=rows,
