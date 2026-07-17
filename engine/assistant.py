@@ -109,6 +109,7 @@ class AskResult:
     reason: str = ""
     attempts: int = 1
     corrections: list = field(default_factory=list)  # errors from failed attempts
+    usage: dict = field(default_factory=dict)        # token spend, incl. cache reads
 
     @property
     def ok(self):
@@ -116,6 +117,26 @@ class AskResult:
 
     def as_turn(self) -> Turn:
         return Turn(self.question, self.sql, self.answer)
+
+
+class AssistantUnavailable(RuntimeError):
+    """The language model could not be reached (missing/invalid key, no credits,
+    network). Raised instead of leaking SDK stack traces into the apps; the
+    original error text is preserved in str(exc)."""
+
+
+def _accumulate_usage(total: dict, msg) -> None:
+    """Sum token usage across the calls that produced one answer, so the apps can
+    show what a question actually cost — including prompt-cache reads, which is
+    how the caching claim in the README is made visible rather than asserted."""
+    usage = getattr(msg, "usage", None)
+    if usage is None:
+        return
+    for key in ("input_tokens", "output_tokens",
+                "cache_read_input_tokens", "cache_creation_input_tokens"):
+        value = getattr(usage, key, None)
+        if value:
+            total[key] = total.get(key, 0) + value
 
 
 def _format_result(res: QueryResult, max_rows: int = 30) -> str:
@@ -157,14 +178,24 @@ class Assistant:
             "cache_control": {"type": "ephemeral"},
         }]
 
+    def _create(self, **kwargs):
+        """One place where the SDK is called, so auth/billing/network failures
+        surface as a single friendly exception instead of a stack trace."""
+        try:
+            return self.client.messages.create(**kwargs)
+        except anthropic.APIError as e:
+            raise AssistantUnavailable(str(e)) from e
+        except TypeError as e:  # the SDK's "could not resolve authentication" error
+            raise AssistantUnavailable(str(e)) from e
+
     def ask(self, question: str, history: list = None) -> AskResult:
         messages = _history_messages(history or [])
         messages.append({"role": "user", "content": question})
 
-        corrections = []
+        usage, corrections = {}, []
         sql, explanation, result = "", "", None
         for attempt in range(1, MAX_ATTEMPTS + 1):
-            msg = self.client.messages.create(
+            msg = self._create(
                 model=self.model,
                 max_tokens=2048,
                 system=self.system,
@@ -172,23 +203,24 @@ class Assistant:
                 tool_choice={"type": "any"},
                 messages=messages,
             )
+            _accumulate_usage(usage, msg)
             tool_use = next((b for b in msg.content if b.type == "tool_use"), None)
             if tool_use is None:
                 return AskResult(question, refused=True, attempts=attempt,
-                                 corrections=corrections,
+                                 corrections=corrections, usage=usage,
                                  reason="model did not produce a query")
             if tool_use.name == "cannot_answer":
                 return AskResult(question, refused=True, attempts=attempt,
-                                 corrections=corrections,
+                                 corrections=corrections, usage=usage,
                                  reason=tool_use.input.get("reason", "out of scope"))
 
             sql = tool_use.input["sql"]
             explanation = tool_use.input.get("explanation", "")
             result = run_query(self.con, sql)
             if result.ok:
-                answer = self._summarize(question, result)
+                answer = self._summarize(question, result, usage)
                 return AskResult(question, sql=sql, explanation=explanation,
-                                 answer=answer, result=result,
+                                 answer=answer, result=result, usage=usage,
                                  attempts=attempt, corrections=corrections)
 
             # Self-correction: hand the real error back and ask for a fix.
@@ -202,18 +234,21 @@ class Assistant:
 
         # Out of attempts — return the last failure honestly.
         return AskResult(question, sql=sql, explanation=explanation, result=result,
-                         attempts=MAX_ATTEMPTS, corrections=corrections)
+                         attempts=MAX_ATTEMPTS, corrections=corrections, usage=usage)
 
-    def _summarize(self, question: str, result: QueryResult) -> str:
+    def _summarize(self, question: str, result: QueryResult, usage: dict) -> str:
         """Turn the result table into one or two plain-English sentences, grounded
         strictly in the returned rows."""
-        msg = self.client.messages.create(
+        msg = self._create(
             model=self.model,
             max_tokens=400,
             system=("Answer the user's question in one or two sentences using ONLY "
                     "the SQL result provided. Never invent or round beyond what is "
                     "shown. If there are no rows, say nothing matched."),
-            messages=[{"role": "user",
-                       "content": f"Question: {question}\n\nSQL result:\n{_format_result(result)}"}],
+            messages=[{
+                "role": "user",
+                "content": f"Question: {question}\n\nSQL result:\n{_format_result(result)}",
+            }],
         )
+        _accumulate_usage(usage, msg)
         return "".join(b.text for b in msg.content if b.type == "text").strip()

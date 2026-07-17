@@ -1,0 +1,11 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B"]
+ignore = ["E402"]  # sys.path bootstraps in app/ and scripts/ come before imports
+
+[tool.ruff.lint.per-file-ignores]
+# the manifest is a data catalog — its description strings read better unwrapped
+"data_manifest.py" = ["E501"]

@@ -55,7 +55,8 @@ def run_accuracy(assistant):
 
 
 def run_safety(assistant):
-    cases = yaml.safe_load((ROOT / "evals" / "adversarial_questions.yaml").read_text(encoding="utf-8"))
+    cases = yaml.safe_load(
+        (ROOT / "evals" / "adversarial_questions.yaml").read_text(encoding="utf-8"))
     passed = 0
     print("=== Safety (adversarial questions) ===")
     for case in cases:

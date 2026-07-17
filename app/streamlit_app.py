@@ -19,10 +19,16 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from data_manifest import DOMAINS  # noqa: E402
-from engine.assistant import Assistant  # noqa: E402
+from engine.assistant import Assistant, AssistantUnavailable  # noqa: E402
 from engine.warehouse import build_warehouse, table_names  # noqa: E402
 
 st.set_page_config(page_title="Ask Your Data", page_icon="💬", layout="wide")
+
+import os  # noqa: E402
+
+if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
+    st.warning("No `ANTHROPIC_API_KEY` detected — the warehouse and UI work, but "
+               "questions need a key. Set it in your environment and restart.")
 
 
 @st.cache_resource
@@ -66,7 +72,7 @@ if not st.session_state.transcript:
 clicked = None
 if not st.session_state.transcript:
     cols = st.columns(len(EXAMPLES))
-    for col, ex in zip(cols, EXAMPLES):
+    for col, ex in zip(cols, EXAMPLES, strict=True):
         if col.button(ex, use_container_width=True):
             clicked = ex
 
@@ -89,6 +95,14 @@ def render_entry(entry):
                     st.caption("Showing the first rows only.")
             elif entry["error"]:
                 st.error(f"Query error: {entry['error']}")
+            if entry.get("usage"):
+                u = entry["usage"]
+                bits = [f"tokens in {u.get('input_tokens', 0):,}",
+                        f"out {u.get('output_tokens', 0):,}"]
+                if u.get("cache_read_input_tokens"):
+                    bits.append(f"cache read {u['cache_read_input_tokens']:,} "
+                                "(the schema catalog served from cache)")
+                st.caption(" · ".join(bits))
 
 
 for entry in st.session_state.transcript:
@@ -100,7 +114,13 @@ if question:
     st.chat_message("user").write(question)
     with st.chat_message("assistant"):
         with st.spinner("Writing SQL and running it..."):
-            result = assistant.ask(question, history=st.session_state.turns)
+            try:
+                result = assistant.ask(question, history=st.session_state.turns)
+            except AssistantUnavailable as e:
+                st.error(f"The language model is unavailable: {e}\n\n"
+                         "Set `ANTHROPIC_API_KEY` (and check your credit balance), "
+                         "then ask again.")
+                st.stop()
 
     entry = {
         "question": question,
@@ -114,6 +134,7 @@ if question:
                  if (result.result and result.result.ok and result.result.rows) else None),
         "truncated": bool(result.result and result.result.truncated),
         "error": result.result.error if (result.result and not result.result.ok) else "",
+        "usage": result.usage,
     }
     st.session_state.transcript.append(entry)
     if result.ok:

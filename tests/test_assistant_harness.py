@@ -11,9 +11,11 @@ returns.
 
 from types import SimpleNamespace
 
+import anthropic
+import httpx
 import pytest
 
-from engine.assistant import MAX_ATTEMPTS, Assistant, Turn
+from engine.assistant import MAX_ATTEMPTS, Assistant, AssistantUnavailable, Turn
 
 
 def tool_use(name, **input):
@@ -24,8 +26,14 @@ def text(t):
     return SimpleNamespace(type="text", text=t)
 
 
-def msg(*blocks):
-    return SimpleNamespace(content=list(blocks))
+def msg(*blocks, usage=None):
+    return SimpleNamespace(content=list(blocks), usage=usage)
+
+
+def usage(inp=0, out=0, cache_read=0):
+    return SimpleNamespace(input_tokens=inp, output_tokens=out,
+                           cache_read_input_tokens=cache_read,
+                           cache_creation_input_tokens=0)
 
 
 class FakeClient:
@@ -131,3 +139,30 @@ def test_schema_catalog_is_cache_controlled(con):
     system = client.calls[0]["system"]
     assert system[0]["cache_control"] == {"type": "ephemeral"}
     assert "healthcare_fact_claims" in system[0]["text"]
+
+
+def test_usage_is_aggregated_across_calls(con):
+    client = FakeClient([
+        msg(tool_use("answer_with_sql", sql=GOOD_SQL, explanation=""),
+            usage=usage(inp=5000, out=100)),
+        msg(text("12,000."), usage=usage(inp=200, out=40, cache_read=4800)),
+    ])
+    res = Assistant(con, client=client).ask("how many claims?")
+    assert res.usage["input_tokens"] == 5200
+    assert res.usage["output_tokens"] == 140
+    assert res.usage["cache_read_input_tokens"] == 4800
+
+
+class DownClient:
+    """Simulates an unreachable API (bad key, no credits, network down)."""
+
+    def __init__(self):
+        self.messages = SimpleNamespace(create=self._create)
+
+    def _create(self, **kwargs):
+        raise anthropic.APIConnectionError(request=httpx.Request("POST", "https://api.anthropic.com"))
+
+
+def test_api_failure_raises_a_single_friendly_error(con):
+    with pytest.raises(AssistantUnavailable):
+        Assistant(con, client=DownClient()).ask("how many claims?")

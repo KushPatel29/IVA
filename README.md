@@ -109,8 +109,14 @@ must end in a refusal or read-only SQL. It needs an API key, so it runs on
 demand rather than in CI.
 
 ```
-62 tests — the 61 that don't need a model run in CI; 1 live model test skips without a key.
+64 tests — the 63 that don't need a model run in CI (plus a ruff lint gate);
+1 live model test skips without a key.
 ```
+
+Two small production touches worth noting: every answer reports its **token
+spend** — including prompt-cache reads, so the caching claim is visible in the
+UI, not just asserted — and a missing/invalid API key degrades into a clear
+setup message instead of a stack trace (the warehouse and UI work without one).
 
 ## Run it
 

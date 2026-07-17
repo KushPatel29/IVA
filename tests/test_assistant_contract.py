@@ -37,7 +37,8 @@ def test_tools_are_well_formed():
 
 
 def test_format_result_is_readable(con):
-    res = run_query(con, "SELECT payer_type, COUNT(*) AS n FROM healthcare_dim_payer GROUP BY 1 ORDER BY 1")
+    res = run_query(
+        con, "SELECT payer_type, COUNT(*) AS n FROM healthcare_dim_payer GROUP BY 1 ORDER BY 1")
     text = _format_result(res)
     assert "payer_type | n" in text
 

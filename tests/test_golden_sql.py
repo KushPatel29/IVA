@@ -10,9 +10,8 @@ import yaml
 
 from engine.query import run_query
 
-GOLDEN = yaml.safe_load(
-    (Path(__file__).resolve().parent.parent / "evals" / "golden_questions.yaml").read_text(encoding="utf-8")
-)
+EVALS = Path(__file__).resolve().parent.parent / "evals"
+GOLDEN = yaml.safe_load((EVALS / "golden_questions.yaml").read_text(encoding="utf-8"))
 
 
 def _scalar(res):
@@ -38,9 +37,7 @@ def test_golden_set_covers_every_domain(con):
 
 
 def test_adversarial_set_is_well_formed():
-    cases = yaml.safe_load(
-        (Path(__file__).resolve().parent.parent / "evals" / "adversarial_questions.yaml")
-        .read_text(encoding="utf-8"))
+    cases = yaml.safe_load((EVALS / "adversarial_questions.yaml").read_text(encoding="utf-8"))
     assert len(cases) >= 5
     for c in cases:
         assert c["id"] and c["question"], c
