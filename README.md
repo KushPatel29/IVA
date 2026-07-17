@@ -81,14 +81,14 @@ wholesale customers, and migration verdicts.
 
 ```mermaid
 flowchart LR
-    Q["Question in<br/>plain English"] --> A[Claude]
-    C[("Schema catalog<br/>36 tables + descriptions")] --> A
-    A -->|writes SQL| G{"Read-only<br/>SQL guard"}
-    A -->|out of scope| R["Refuses honestly"]
-    G -->|SELECT only| DB[("DuckDB warehouse<br/>vendored synthetic data")]
-    G -->|blocked| X["Rejected"]
-    DB -->|error| A
-    DB --> S["Answer in plain English<br/>+ the SQL + the rows"]
+    Q[Question in<br/>plain English] --> A[Claude]
+    C[(Schema catalog<br/>36 documented tables)] --> A
+    A -->|"writes SQL"| G{Read-only<br/>SQL guard}
+    A -->|"out of scope"| R[Refuses honestly]
+    G -->|"SELECT only"| W[(DuckDB warehouse<br/>vendored synthetic data)]
+    G -->|"blocked"| X[Rejected]
+    W -->|"error goes back for a retry"| A
+    W --> S[Answer in plain English<br/>with the SQL and the rows]
 ```
 
 1. **Warehouse** — every vendored CSV loads into an in-memory DuckDB, named
